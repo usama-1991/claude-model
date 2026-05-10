@@ -1,0 +1,118 @@
+{
+  "name": "AutoFlow - WhatsApp Message Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "autoflow-message",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300],
+      "webhookId": "autoflow-message-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.event }}",
+              "operation": "equals",
+              "value2": "new_message"
+            }
+          ]
+        }
+      },
+      "id": "check-event",
+      "name": "Is New Message?",
+      "type": "n8n-nodes-base.if",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.airtable.com/v0/YOUR_BASE_ID/Leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer YOUR_AIRTABLE_KEY" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "fields[Name]",    "value": "={{ $json.contact.name }}" },
+            { "name": "fields[Phone]",   "value": "={{ $json.contact.phone }}" },
+            { "name": "fields[Channel]", "value": "={{ $json.message.channel }}" },
+            { "name": "fields[Message]", "value": "={{ $json.message.text }}" },
+            { "name": "fields[Date]",    "value": "={{ $json.timestamp }}" }
+          ]
+        }
+      },
+      "id": "save-to-airtable",
+      "name": "Save Lead to Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "spreadsheetId": "YOUR_GOOGLE_SHEET_ID",
+        "range": "Sheet1!A:F",
+        "valueInputMode": "USER_ENTERED",
+        "values": {
+          "values": [
+            ["={{ $json.timestamp }}", "={{ $json.contact.name }}", "={{ $json.contact.phone }}", "={{ $json.message.channel }}", "={{ $json.message.text }}", "={{ $json.tenant.slug }}"]
+          ]
+        }
+      },
+      "id": "save-to-sheets",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [680, 340]
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_PHONE_NUMBER",
+        "message": "=🔔 New WhatsApp message!\nFrom: {{ $json.contact.name }} ({{ $json.contact.phone }})\nMessage: {{ $json.message.text }}\nBusiness: {{ $json.tenant.slug }}"
+      },
+      "id": "notify-whatsapp",
+      "name": "Notify Owner (WhatsApp)",
+      "type": "n8n-nodes-base.whatsApp",
+      "position": [680, 480],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\", \"processed\": true }"
+      },
+      "id": "respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Is New Message?", "type": "main", "index": 0 }]] },
+    "Is New Message?": {
+      "main": [
+        [
+          { "node": "Save Lead to Airtable", "type": "main", "index": 0 },
+          { "node": "Save to Google Sheets", "type": "main", "index": 0 },
+          { "node": "Notify Owner (WhatsApp)", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Respond OK", "type": "main", "index": 0 }]
+      ]
+    },
+    "Save to Google Sheets": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "autoflow_version": "1.0.0",
+    "description": "Triggered by AutoFlow backend on every new inbound message. Saves to Google Sheets + Airtable."
+  }
+}
