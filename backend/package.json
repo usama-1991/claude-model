@@ -20,9 +20,11 @@
     "fastify-plugin": "^4.5.1",
     "openai": "^4.52.7",
     "pino-pretty": "^11.2.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "ws": "^8.17.1"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.10",
     "tsx": "^4.16.2"
   }
 }

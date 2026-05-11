@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
+import ws from 'ws';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -18,6 +19,9 @@ export default fp(async (fastify: FastifyInstance) => {
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    realtime: {
+      transport: ws as any,
+    },
   });
 
   fastify.decorate('supabase', supabase);
