@@ -16,12 +16,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      fastify.log.warn('Auth login failed', { email, status: error.status, message: error.message, details: error.details });
+      fastify.log.warn({ email, status: error.status, message: error.message, details: (error as any).details }, 'Auth login failed');
       return reply.status(401).send({ error: error.message || 'Invalid email or password' });
     }
 
     if (!data.user) {
-      fastify.log.warn('Auth login succeeded but user missing', { email });
+      fastify.log.warn({ email }, 'Auth login succeeded but user missing');
       return reply.status(401).send({ error: 'Invalid login response from Supabase' });
     }
 
