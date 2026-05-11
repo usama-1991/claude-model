@@ -303,8 +303,8 @@ async function processIncomingMessage({
     );
     aiReply = result.reply;
     tokensUsed = result.tokensUsed;
-  } catch (err) {
-    fastify.log.error('AI generation failed:', err);
+  } catch (err: any) {
+    fastify.log.error(err, 'AI generation failed:');
     return;
   }
 
@@ -333,7 +333,7 @@ async function processIncomingMessage({
       ai_tokens_used: tokensUsed,
     });
 
-  } catch (err) {
-    fastify.log.error('Failed to send AI reply:', err);
+  } catch (err: any) {
+    fastify.log.error(err, 'Failed to send AI reply:');
   }
 }
