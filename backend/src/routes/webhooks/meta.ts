@@ -119,42 +119,56 @@ async function processIncomingMessage({
 }) {
   const supabase = fastify.supabase;
 
+  fastify.log.info(`🛠️ Processing ${channel} message from ${externalId}...`);
+
   // 1. Find tenant by phone_number_id or page_id
   let tenant: any = null;
 
   if (channel === 'whatsapp' && phoneNumberId) {
-    const { data } = await supabase
+    fastify.log.info(`🔍 Searching for tenant with WhatsApp Phone ID: ${phoneNumberId}`);
+    const { data, error } = await supabase
       .from('tenants')
       .select('*, agents(*)')
       .eq('whatsapp_phone_id', phoneNumberId)
       .single();
+    if (error) fastify.log.error(error, 'Error finding tenant:');
     tenant = data;
   } else if ((channel === 'instagram' || channel === 'facebook') && pageId) {
+    fastify.log.info(`🔍 Searching for tenant with Page ID: ${pageId}`);
     const field = channel === 'instagram' ? 'instagram_page_id' : 'facebook_page_id';
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tenants')
       .select('*, agents(*)')
       .eq(field, pageId)
       .single();
+    if (error) fastify.log.error(error, 'Error finding tenant:');
     tenant = data;
   }
 
   if (!tenant) {
-    fastify.log.warn(`No tenant found for ${channel} ${phoneNumberId || pageId}`);
+    fastify.log.warn(`⚠️ No tenant found for ${channel} ID: ${phoneNumberId || pageId}`);
     return;
   }
 
+  fastify.log.info(`✅ Found tenant: ${tenant.name} (${tenant.id})`);
+
   // 2. Check plan allows this channel
-  const { data: plan } = await supabase
+  const { data: plan, error: planError } = await supabase
     .from('plans')
     .select('channels')
     .eq('id', tenant.plan_id)
     .single();
 
-  if (!plan?.channels?.includes(channel)) {
-    fastify.log.warn(`Tenant ${tenant.id} plan does not include ${channel}`);
+  if (planError) fastify.log.error(planError, 'Error fetching plan:');
+
+  const allowedChannels = typeof plan?.channels === 'string' ? JSON.parse(plan.channels) : (plan?.channels || []);
+  
+  if (!allowedChannels.includes(channel)) {
+    fastify.log.warn(`🚫 Tenant ${tenant.id} plan does not include ${channel}. Allowed: ${JSON.stringify(allowedChannels)}`);
     return;
   }
+
+  fastify.log.info(`📦 Plan check passed. Proceeding with contact upsert...`);
 
   // 3. Upsert contact
   const contactField = channel === 'whatsapp' ? 'whatsapp_id' : channel === 'instagram' ? 'instagram_id' : 'facebook_id';
