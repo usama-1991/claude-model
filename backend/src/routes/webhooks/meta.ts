@@ -42,8 +42,15 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
     reply.status(200).send('OK'); // Always respond 200 immediately to Meta
 
     const body = request.body as any;
+    
+    // TEMPORARY DEBUG: Log the raw payload from Meta
+    fastify.log.info({ rawBody: body }, 'RAW WHATSAPP WEBHOOK PAYLOAD');
+
     const parsed = parseWhatsAppWebhook(body);
-    if (!parsed) return;
+    if (!parsed) {
+      fastify.log.warn('Webhook payload could not be parsed as a message (might be a status update).');
+      return;
+    }
 
     fastify.log.info(`📱 WhatsApp message from ${parsed.from}`);
 

@@ -1,8 +1,8 @@
 const axios = require('axios');
 
 // --- CONFIGURATION ---
-const BACKEND_URL = 'http://localhost:3001'; // Change to your Railway URL if testing production
-const CHANNEL = 'whatsapp'; // whatsapp, instagram, or facebook
+const BACKEND_URL = 'https://claude-model-production.up.railway.app'; // Production URL
+const CHANNEL = 'whatsapp';
 const VERIFY_TOKEN = 'autoflow_webhook_verify_2026';
 
 // --- TEST DATA ---
@@ -13,13 +13,13 @@ const mockWebhookPayload = {
     changes: [{
       value: {
         messaging_product: 'whatsapp',
-        metadata: { display_phone_number: '1234567890', phone_number_id: 'YOUR_PHONE_NUMBER_ID' }, // UPDATE THIS
-        contacts: [{ profile: { name: 'Test User' }, wa_id: '1234567890' }],
+        metadata: { display_phone_number: '1234567890', phone_number_id: '1081880905011541' }, // User's actual phone ID
+        contacts: [{ profile: { name: 'Test User via Script' }, wa_id: '923000000000' }],
         messages: [{
-          from: '1234567890',
-          id: 'wamid.HBgLMTIzNDU2Nzg5MFYDVDRGRDU2RDU2RDVF',
-          timestamp: '1623456789',
-          text: { body: 'Hello from test script!' },
+          from: '923000000000',
+          id: 'wamid.HBgLMTIzNDU2Nzg5MFYDVDRGRDU2RDU2RDVF' + Math.floor(Math.random() * 10000), // Randomize ID to avoid dedup
+          timestamp: Math.floor(Date.now() / 1000).toString(),
+          text: { body: 'Hello from backend test script! If you see this, the webhook is working perfectly.' },
           type: 'text'
         }]
       },
